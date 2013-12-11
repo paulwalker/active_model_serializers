@@ -414,16 +414,22 @@ module ActiveModel
 
       association = association_class.new(name, self, options)
 
+      if association.embed_in_root? && hash.nil?
+        raise IncludeError.new(self.class, association.name) if hash.nil?
+      end
+
       if association.embed_ids?
         node[association.key] = association.serialize_ids
 
-        if association.embed_in_root? && hash.nil?
-          raise IncludeError.new(self.class, association.name)
-        elsif association.embed_in_root? && association.embeddable?
-          merge_association hash, association.root, association.serializables, unique_values
+        if association.embed_in_root? && association.embeddable?
+          merge_association(hash, association.root, association.serializables, unique_values)
         end
       elsif association.embed_objects?
-        node[association.key] = association.serialize
+        if association.embed_in_root? && association.embeddable?
+          merge_association(hash, association.root, association.serializables, unique_values)
+        else
+          node[association.key] = association.serialize
+        end
       end
     end
 
